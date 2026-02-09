@@ -124,7 +124,14 @@ struct Update
 {
 	name: String,
 	source: UpdateSource,
-	version: (Option<Version>, Option<Version>),
+	version: Versions,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+struct Versions
+{
+	old: Option<Version>,
+	new: Option<Version>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -139,7 +146,7 @@ struct Version(String);
 
 impl UpdateManager
 {
-	fn fetch_pacman(self) -> io::Result<Self>
+	fn fetch_pacman(mut self) -> io::Result<Self>
 	{
 		let status: std::process::Output = std::process::Command::new("checkupdates").output()?;
 		if status.status.code() == Some(2) {
@@ -147,11 +154,35 @@ impl UpdateManager
 			return Ok(self);
 		}
 
+		let output: String =
+			String::from_utf8(status.stdout).expect("I don't thing checkupdates does return not utf8 output");
+		let mut up: Vec<Update> = output
+			.split('\n')
+			.filter_map(|s| {
+				if s.is_empty() {
+					return None;
+				}
+				let tmp = s.split_once("->").expect("this should just do it");
+				let (name, old_version) = tmp.0.split_once(' ').expect("this should just do it 2");
+				return Some(Update {
+					name: name.into(),
+					source: UpdateSource::Pacman,
+					version: Versions {
+						old: Some(Version(old_version.to_string())),
+						new: Some(Version(tmp.1.to_string())),
+					},
+				});
+			})
+			.collect();
+
+		self.updates.append(&mut up);
+
 		return Ok(self);
 	}
 }
 
 fn main()
 {
-	println!("{:?}", UpdateManager::default());
+	let updates = UpdateManager::default().fetch_pacman();
+	println!("{:#?}", updates);
 }
