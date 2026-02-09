@@ -113,6 +113,25 @@
 
 use std::io;
 
+macro_rules! splitn_at {
+	($slice:expr, [ $( $idx:expr ),+ $(,)? ] ) => {{
+		let slice = $slice;
+		let mut start: usize = 0;
+		(
+			$(
+				{
+					let end = $idx;
+					let part = &slice[start..end];
+					start = end;
+					part
+				}
+			),+
+			,
+			&slice[start..]
+		)
+	}};
+}
+
 #[derive(Debug, Clone, PartialEq, Default)]
 struct UpdateManager
 {
@@ -179,10 +198,54 @@ impl UpdateManager
 
 		return Ok(self);
 	}
+
+	fn fetch_flatpak(mut self) -> io::Result<Self>
+	{
+		let status: std::process::Output = std::process::Command::new("flatpak")
+			.args(["remote-ls", "--updates", "--columns", "name,version"])
+			.output()?;
+		let output: String =
+			String::from_utf8(status.stdout).expect("I don't thing checkupdates does return not utf8 output");
+
+		let mut up = output
+			.split('\n')
+			.filter_map(|s| {
+				if s.is_empty() {
+					return None;
+				}
+
+				let parts: Vec<&str> = s.split('\t').filter(|st| return !st.is_empty()).collect();
+
+				let name = parts[0];
+				let version = parts.get(1).unwrap_or(&"");
+
+				return Some(Update {
+					name: name.to_string(),
+					source: UpdateSource::Flatpak,
+					version: Versions {
+						old: None,
+						new: if !version.is_empty() {
+							Some(Version(version.to_string()))
+						} else {
+							None
+						},
+					},
+				});
+			})
+			.collect();
+
+		self.updates.append(&mut up);
+
+		return Ok(self);
+	}
 }
 
 fn main()
 {
-	let updates = UpdateManager::default().fetch_pacman();
+	let updates = UpdateManager::default()
+		.fetch_pacman()
+		.unwrap()
+		.fetch_flatpak()
+		.unwrap();
 	println!("{:#?}", updates);
 }
