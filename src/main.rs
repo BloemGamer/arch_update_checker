@@ -181,14 +181,14 @@ impl UpdateManager
 				if s.is_empty() {
 					return None;
 				}
-				let tmp = s.split_once("->").expect("this should just do it");
-				let (name, old_version) = tmp.0.split_once(' ').expect("this should just do it 2");
+				let tmp: (&str, &str) = s.split_once("->").expect("this should just do it");
+				let (name, old_version): (&str, &str) = tmp.0.split_once(' ').expect("this should just do it 2");
 				return Some(Update {
 					name: name.into(),
 					source: UpdateSource::Pacman,
 					version: Versions {
-						old: Some(Version(old_version.to_string())),
-						new: Some(Version(tmp.1.to_string())),
+						old: Some(Version(old_version.trim().to_string())),
+						new: Some(Version(tmp.1.trim().to_string())),
 					},
 				});
 			})
@@ -207,7 +207,7 @@ impl UpdateManager
 		let output: String =
 			String::from_utf8(status.stdout).expect("I don't thing checkupdates does return not utf8 output");
 
-		let mut up = output
+		let mut up: Vec<Update> = output
 			.split('\n')
 			.filter_map(|s| {
 				if s.is_empty() {
@@ -216,8 +216,8 @@ impl UpdateManager
 
 				let parts: Vec<&str> = s.split('\t').filter(|st| return !st.is_empty()).collect();
 
-				let name = parts[0];
-				let version = parts.get(1).unwrap_or(&"");
+				let name: &str = parts[0];
+				let version: &str = parts.get(1).unwrap_or(&"").trim();
 
 				return Some(Update {
 					name: name.to_string(),
