@@ -42,7 +42,6 @@
 #![warn(clippy::manual_unwrap_or)]
 #![warn(clippy::panic)]
 #![warn(clippy::unnecessary_wraps)]
-#![warn(clippy::unwrap_used)]
 #![cfg_attr(test, allow(clippy::panic, clippy::unwrap_used))]
 // Performance / Allocation
 #![warn(clippy::borrowed_box)]
@@ -111,26 +110,8 @@
 
 // #![warn(clippy::todo)]
 
-use std::io;
-
-macro_rules! splitn_at {
-	($slice:expr, [ $( $idx:expr ),+ $(,)? ] ) => {{
-		let slice = $slice;
-		let mut start: usize = 0;
-		(
-			$(
-				{
-					let end = $idx;
-					let part = &slice[start..end];
-					start = end;
-					part
-				}
-			),+
-			,
-			&slice[start..]
-		)
-	}};
-}
+use serde_json::json;
+use std::{fmt::Write, io};
 
 #[derive(Debug, Clone, PartialEq, Default)]
 struct UpdateManager
@@ -238,14 +219,84 @@ impl UpdateManager
 
 		return Ok(self);
 	}
+
+	fn to_waybar(&self) -> serde_json::Value
+	{
+		let mut pacman: Vec<&Update> = Vec::new();
+		let mut flatpak: Vec<&Update> = Vec::new();
+
+		for update in &self.updates {
+			match update.source {
+				UpdateSource::Pacman => pacman.push(update),
+				UpdateSource::Flatpak => {
+					// filter junk entries
+					if update.name != "default" {
+						flatpak.push(update);
+					}
+				}
+			}
+		}
+
+		let total: usize = pacman.len() + flatpak.len();
+
+		if total == 0 {
+			return json!({
+				"text": "",
+				"tooltip": "No updates",
+				"class": "ok"
+			});
+		}
+
+		let mut tooltip = String::new();
+
+		if !pacman.is_empty() {
+			writeln!(tooltip, " Pacman ({})", pacman.len()).ok();
+
+			for u in pacman {
+				let version = match (&u.version.old, &u.version.new) {
+					(Some(old), Some(new)) => format!("{} → {}", old.0, new.0),
+					_ => String::new(),
+				};
+
+				if version.is_empty() {
+					writeln!(tooltip, "  {}", u.name).ok();
+				} else {
+					writeln!(tooltip, "  {} {}", u.name, version).ok();
+				}
+			}
+
+			writeln!(tooltip).ok();
+		}
+
+		if !flatpak.is_empty() {
+			writeln!(tooltip, " Flatpak ({})", flatpak.len()).ok();
+
+			for u in flatpak {
+				writeln!(tooltip, "  {}", u.name).ok();
+			}
+		}
+
+		let class: &str = match total {
+			0 => "ok",
+			1..=4 => "low",
+			5..=14 => "medium",
+			_ => "high",
+		};
+
+		return json!({
+			"text": format!("󰏗 {}", total),
+			"tooltip": tooltip,
+			"class": class
+		});
+	}
 }
 
 fn main()
 {
-	let updates = UpdateManager::default()
+	let updates: UpdateManager = UpdateManager::default()
 		.fetch_pacman()
 		.unwrap()
 		.fetch_flatpak()
 		.unwrap();
-	println!("{:#?}", updates);
+	println!("{}", updates.to_waybar());
 }
