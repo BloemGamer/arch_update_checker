@@ -33,10 +33,10 @@ sudo cp target/release/arch_update_checker /usr/local/bin/
 "custom/updates": {
 	"format": "{}",
 	"return-type": "json",
-	"exec": "/usr/local/bin/arch_update_checker",
+	"exec": "/usr/local/bin/arch_update_checker --pacman --flatpak",
 	"interval": 600,
 	"tooltip": true,
-	"on-click": "sh -c '\"$TERMINAL\" -e bash -c \"echo \\\"Command for updating: sudo pacman -Syu && flatpak update\\\"; read -p \\\"Press Enter to close...\\\"\"'"
+	"on-click": "sh -c '\"$TERMINAL\" -e bash -c \"echo -e \\\"Command for updating:\\\"; /usr/local/bin/arch_update_checker --pacman --flatpak --update-command; read -p \\\"Press Enter to close...\\\"\"'"
 }
 ```
 Update the `exec` path to where the final binary is on your machine.

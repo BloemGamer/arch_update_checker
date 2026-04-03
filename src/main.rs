@@ -110,12 +110,15 @@
 
 // #![warn(clippy::todo)]
 
+use clap::Parser;
 use serde_json::json;
 use std::{fmt::Write, io};
 
 #[derive(Debug, Clone, PartialEq, Default)]
 struct UpdateManager
 {
+	pacman: bool,
+	flatpak: bool,
 	updates: Vec<Update>,
 }
 
@@ -143,6 +146,18 @@ enum UpdateSource
 
 #[derive(Debug, Clone, PartialEq, Default)]
 struct Version(String);
+
+#[derive(Debug, Clone, PartialEq, clap::Parser)]
+#[command(version, about, long_about = None)]
+struct Config
+{
+	#[arg(short, long)]
+	pacman: bool,
+	#[arg(short, long)]
+	flatpak: bool,
+	#[arg(short, long)]
+	update_command: bool,
+}
 
 impl UpdateManager
 {
@@ -175,7 +190,10 @@ impl UpdateManager
 			})
 			.collect();
 
-		self.updates.append(&mut up);
+		if !up.is_empty() {
+			self.updates.append(&mut up);
+			self.pacman = true;
+		}
 
 		return Ok(self);
 	}
@@ -215,7 +233,10 @@ impl UpdateManager
 			})
 			.collect();
 
-		self.updates.append(&mut up);
+		if !up.is_empty() {
+			self.updates.append(&mut up);
+			self.flatpak = true;
+		}
 
 		return Ok(self);
 	}
@@ -293,10 +314,35 @@ impl UpdateManager
 
 fn main()
 {
-	let updates: UpdateManager = UpdateManager::default()
-		.fetch_pacman()
-		.unwrap()
-		.fetch_flatpak()
-		.unwrap();
-	println!("{}", updates.to_waybar());
+	let config: Config = Config::parse();
+	let mut updates: UpdateManager = UpdateManager::default();
+
+	if config.pacman {
+		updates = updates.fetch_pacman().unwrap();
+	}
+
+	if config.flatpak {
+		updates = updates.fetch_flatpak().unwrap();
+	}
+
+	if config.update_command {
+		let mut first: bool = true;
+		if updates.pacman {
+			if !first {
+				print!(" && ");
+			}
+			first = false;
+			println!("pacman -Syu");
+		}
+		if updates.flatpak {
+			if !first {
+				print!(" && ");
+			}
+			first = false;
+			println!("flatpak update");
+		}
+		let _: bool = first;
+	} else {
+		println!("{}", updates.to_waybar());
+	}
 }
