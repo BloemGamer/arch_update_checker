@@ -1,5 +1,5 @@
 [package]
-name = "pacman_updates"
+name = "arch_update_checker"
 version = "0.1.0"
 edition = "2024"
 
