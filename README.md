@@ -41,7 +41,7 @@ sudo cp target/release/arch_update_checker /usr/local/bin/
 	"exec": "/usr/local/bin/arch_update_checker --pacman --flatpak",
 	"interval": 600,
 	"tooltip": true,
-	"on-click": "sh -c '\"$TERMINAL\" -e bash -c \"echo -e \\\"Command for updating:\\\"; /usr/local/bin/arch_update_checker --pacman --flatpak --update-command; read -p \\\"Press Enter to close...\\\"\"'"
+	"on-click": "sh -c '\"$TERMINAL\" -e bash -c \"echo -e \\\"Command for updating:\\\"; /run/media/bloem/D/programmeren/arch_update_checker/arch_update_checker --pacman --flatpak --update-command; read -p \\\"Press Enter to close...\\\"\"'"
 }
 ```
 Update the `exec` path to where the final binary is on your machine.
