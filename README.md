@@ -5,6 +5,11 @@
 # Arch Update Checker
 A lightweight Rust-based tool to monitor system updates on Arch Linux. Designed to be integrated with Waybar, it shows pending updates for Pacman and Flatpak.
 
+## Screenshots
+
+![Screenshot when pacman has updates](/screenshots/pacman.png)
+![Screenshot when flatpak has updates](/screenshots/flatpak.png)
+
 ## Installation
 
 ### Prerequisites

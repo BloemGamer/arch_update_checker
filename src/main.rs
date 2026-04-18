@@ -305,7 +305,7 @@ impl UpdateManager
 		};
 
 		return json!({
-			"text": format!("󰏗 {}", total),
+			"text": format!("{} 󰏗", total),
 			"tooltip": tooltip,
 			"class": class
 		});
