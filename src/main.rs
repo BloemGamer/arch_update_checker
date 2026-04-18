@@ -332,15 +332,16 @@ fn main()
 				print!(" && ");
 			}
 			first = false;
-			println!("pacman -Syu");
+			print!("pacman -Syu");
 		}
 		if updates.flatpak {
 			if !first {
 				print!(" && ");
 			}
 			first = false;
-			println!("flatpak update");
+			print!("flatpak update");
 		}
+		println!();
 		let _: bool = first;
 	} else {
 		println!("{}", updates.to_waybar());
